@@ -1,0 +1,161 @@
+version: '3'
+
+services:
+  #сервер конфигурации
+  configSrv:
+    image: dh-mirror.gitverse.ru/mongo:latest
+    container_name: configSrv
+    restart: always
+    networks:
+      app-network:
+        ipv4_address: 173.17.0.20
+    volumes:
+      - config-data:/data/db
+      - scripts:/scripts
+    command:
+      [
+        "--configsvr",  #запуск в режиме конфигурации
+        "--replSet",
+        "config_server",
+        "--bind_ip_all",
+        "--port",
+        "27017"
+      ]
+    healthcheck:
+      test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
+      interval: 5s
+      start_period: 10s
+
+  #1-й шард 1 реплика
+  shard1-a:
+    image: dh-mirror.gitverse.ru/mongo:latest
+    container_name: shard1-a
+    restart: always
+    networks:
+      app-network:
+        ipv4_address: 173.17.0.19
+    volumes:
+      - shard1-a-data:/data/db
+      - scripts:/scripts
+    command: mongod --shardsvr --replSet shard1 --bind_ip_all --port 27017
+    healthcheck:
+      test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
+      interval: 5s
+      start_period: 10s
+ #1-й шард 2 реплика
+  shard1-b:
+    image: dh-mirror.gitverse.ru/mongo:latest
+    container_name: shard1-b
+    restart: always
+    networks:
+      app-network:
+        ipv4_address: 173.17.0.18
+    volumes:
+      - shard1-b-data:/data/db
+      - scripts:/scripts
+    command: mongod --shardsvr --replSet shard1 --bind_ip_all --port 27017
+    healthcheck:
+      test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
+      interval: 5s
+      start_period: 10s
+  #2-й шард
+  shard2-a:
+    image: dh-mirror.gitverse.ru/mongo:latest
+    container_name: shard2-a
+    restart: always
+    networks:
+      app-network:
+        ipv4_address: 173.17.0.17
+    volumes:
+      - shard2-a-data:/data/db
+      - scripts:/scripts
+    command: mongod --shardsvr --replSet shard2 --bind_ip_all --port 27017
+    healthcheck:
+      test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
+      interval: 5s
+      start_period: 10s
+#2-й шард
+  shard2-b:
+    image: dh-mirror.gitverse.ru/mongo:latest
+    container_name: shard2-b
+    restart: always
+    networks:
+      app-network:
+        ipv4_address: 173.17.0.16
+    volumes:
+      - shard2-b-data:/data/db
+      - scripts:/scripts
+    command: mongod --shardsvr --replSet shard2 --bind_ip_all --port 27017
+    healthcheck:
+      test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
+      interval: 5s
+      start_period: 10s
+
+  #роутер
+  mongos_router:
+    image: dh-mirror.gitverse.ru/mongo:latest
+    container_name: mongos_router
+    restart: always
+    networks:
+      app-network:
+        ipv4_address: 173.17.0.15
+    volumes:
+      - scripts:/scripts
+    command: mongos --configdb config_server/configSrv:27017 --bind_ip_all --port 27017
+    healthcheck:
+      test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
+      interval: 5s
+      start_period: 10s
+    # deploy:
+    #   mode: replicated
+    #   replicas: 2
+
+  redis:
+    image: dh-mirror.gitverse.ru/redis:latest
+    container_name: redis
+    restart: always
+    networks:
+      app-network:
+        ipv4_address: 173.17.0.10
+    volumes:
+      - cache-data:/data
+
+  pymongo_api:
+    container_name: pymongo_api
+    build:
+      context: api_app
+      dockerfile: Dockerfile
+    image: kazhem/pymongo_api:1.0.0
+    depends_on:
+      - mongos_router
+    networks:
+      app-network:
+        ipv4_address: 173.17.0.2
+    ports:
+      - 8080:8080
+    environment:
+      MONGODB_URL: "mongodb://mongos_router:27017"
+      MONGODB_DATABASE_NAME: "somedb"
+      REDIS_URL: "redis://redis:6379"
+
+networks:
+  app-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 173.17.0.0/16
+
+volumes:
+  config-data:
+  cache-data:
+  shard1-a-data:
+  shard1-b-data:
+  shard2-a-data:
+  shard2-b-data:
+  scripts:
+    driver: local
+    driver_opts:
+      device: ${PWD}/scripts
+      o: bind
+      type: local
