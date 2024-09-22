@@ -1,35 +1,31 @@
-# pymongo-api
 
-## Как запустить
+#Запуск проекта
 
-Запускаем mongodb и приложение
+В каждой папке заданий лежат скрипты ./run.sh ./stop.sh
+для запуска проекта требуется только запустить скрипт ./run.sh из папки проекта
 
-```shell
-docker compose up -d
-```
+пример:
+ sharding-repl-cache/run.sh
 
-Заполняем mongodb данными
+Задание 1
+ 1. mongo_shard.drawio
+ 2. mongo_shard_replica.drawio
+ 3. mongo_shard_with_replica_cache.drawio
 
-```shell
-./scripts/mongo-init.sh
-```
+Задание 2
+./mongo-sharding/run.sh
+./mongo-sharding/stop.sh
 
-## Как проверить
+Задание 3
+./mongo-sharding-repl/run.sh
+./mongo-sharding-repl/stop.sh
 
-### Если вы запускаете проект на локальной машине
+Задание 4
+./sharding-repl-cache/run.sh
+./sharding-repl-cache/stop.sh
 
-Откройте в браузере http://localhost:8080
+Задание 5
+mongo_shard_with_replica_cache_api_servicediscovery.drawio
 
-### Если вы запускаете проект на предоставленной виртуальной машине
-
-Узнать белый ip виртуальной машины
-
-```shell
-curl --silent http://ifconfig.me
-```
-
-Откройте в браузере http://<ip виртуальной машины>:8080
-
-## Доступные эндпоинты
-
-Список доступных эндпоинтов, swagger http://<ip виртуальной машины>:8080/docs
+Задание 6
+mongo_shard_with_replica_cache_api_servicediscovery_cdn.drawio
